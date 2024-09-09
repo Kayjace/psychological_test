@@ -7,6 +7,7 @@ from flask import (
     url_for,
     flash,
     session,
+    make_response
 )
 from werkzeug.security import check_password_hash
 from .models import Question, Participant, Quiz, Admin, Visitor
@@ -15,32 +16,32 @@ import plotly.express as px
 import pandas as pd
 import plotly
 import json
-from sqlalchemy import func, extract
+from sqlalchemy import func
 import plotly.graph_objs as go
 from plotly.offline import plot
 from datetime import datetime
+import uuid
 
 main = Blueprint("main", __name__)
 admin = Blueprint("admin", __name__, url_prefix="/admin/")
 
-def track_visitor():
-    ip_address = request.remote_addr
-    user_agent = request.headers.get('User-Agent')
-    
-    visitor = Visitor.query.filter_by(ip_address=ip_address, user_agent=user_agent).first()
-    
-    if visitor:
-        visitor.last_visit = datetime.utcnow()
-    else:
-        visitor = Visitor(ip_address=ip_address, user_agent=user_agent)
+def track_visitor(visitor_id):
+    visitor = Visitor.query.filter_by(visitor_id=visitor_id).first()
+    if not visitor:
+        visitor = Visitor(visitor_id=visitor_id)
         db.session.add(visitor)
-    
+    visitor.last_visit = datetime.utcnow()
     db.session.commit()
 
-@main.route("/", methods=["GET"])
+@main.route("/")
 def home():
-    track_visitor()
-    return render_template("index.html")
+    visitor_id = request.cookies.get('visitor_id')
+    if not visitor_id:
+        visitor_id = str(uuid.uuid4())
+    track_visitor(visitor_id)
+    response = make_response(render_template("index.html"))
+    response.set_cookie('visitor_id', visitor_id, max_age=31536000)  # 1년 유효
+    return response
 
 @main.route("/participants", methods=["POST"])
 def add_participant():
