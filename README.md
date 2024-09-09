@@ -72,13 +72,19 @@ psychological_test/
 ## 설치 및 실행 방법
 
 1. 저장소 클론:
+```git
 git clone https://github.com/Kayjace/psychological_test.git
+```
 2. 가상 환경 설정 및 의존성 설치:
+```python
 python -m venv venv
 source venv/bin/activate # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+```
 3. 애플리케이션 실행:
+```python
 python run.py
+```
 
 ## 기여 방법
 
