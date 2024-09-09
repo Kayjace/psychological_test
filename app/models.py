@@ -2,9 +2,7 @@ from .database import db
 from datetime import datetime
 
 class Visitor(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    ip_address = db.Column(db.String(45), nullable=False)
-    user_agent = db.Column(db.String(255), nullable=False)
+    id = db.Column(db.String(36), primary_key=True)
     first_visit = db.Column(db.DateTime, default=datetime.utcnow)
     last_visit = db.Column(db.DateTime, default=datetime.utcnow)
 

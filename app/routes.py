@@ -25,20 +25,24 @@ import uuid
 main = Blueprint("main", __name__)
 admin = Blueprint("admin", __name__, url_prefix="/admin/")
 
-def track_visitor(visitor_id):
-    visitor = Visitor.query.filter_by(visitor_id=visitor_id).first()
-    if not visitor:
-        visitor = Visitor(visitor_id=visitor_id)
-        db.session.add(visitor)
-    visitor.last_visit = datetime.utcnow()
-    db.session.commit()
-
-@main.route("/")
-def home():
+def track_visitor():
     visitor_id = request.cookies.get('visitor_id')
     if not visitor_id:
         visitor_id = str(uuid.uuid4())
-    track_visitor(visitor_id)
+    
+    visitor = Visitor.query.filter_by(id=visitor_id).first()
+    if not visitor:
+        visitor = Visitor(id=visitor_id, last_visit=datetime.utcnow())
+        db.session.add(visitor)
+    else:
+        visitor.last_visit = datetime.utcnow()
+    
+    db.session.commit()
+    return visitor_id
+
+@main.route("/", methods=["GET"])
+def home():
+    visitor_id = track_visitor()
     response = make_response(render_template("index.html"))
     response.set_cookie('visitor_id', visitor_id, max_age=31536000)  # 1년 유효
     return response
@@ -228,20 +232,16 @@ def show_results():
     )
     fig_gender.update_traces(textposition="inside", textinfo="percent+label")
 
-    graphs_json = json.dumps(
-        {
-            'mbti_charts': mbti_charts,
-            "mbti_distribution": fig_mbti,
-            "age_mbti_distribution": fig_age_mbti,
-            "gender_mbti_distribution": fig_gender_mbti,
-            "age_distribution": fig_age,
-            "gender_distribution": fig_gender,
-        },
-        cls=plotly.utils.PlotlyJSONEncoder,
-    )
+    graphs_json = json.dumps({
+        'mbti_charts': mbti_charts,
+        "mbti_distribution": fig_mbti.to_dict(),
+        "age_mbti_distribution": fig_age_mbti.to_dict(),
+        "gender_mbti_distribution": fig_gender_mbti.to_dict(),
+        "age_distribution": fig_age.to_dict(),
+        "gender_distribution": fig_gender.to_dict(),
+    }, cls=plotly.utils.PlotlyJSONEncoder)
 
     return render_template("results.html", graphs_json=graphs_json, mbti_type=mbti_type, mbti_description=mbti_description)
-
 
 @admin.route("", methods=["GET", "POST"])
 def login():
@@ -279,7 +279,6 @@ def login_required(f):
 
     return decorated_function
 
-
 @admin.route("/dashboard")
 @login_required
 def dashboard():
@@ -289,22 +288,29 @@ def dashboard():
     # 총 참여자 수 계산
     total_participants = db.session.query(func.count(Participant.id)).scalar()
     
+    # 날짜별 참가자 수를 계산
     participant_counts = (
         db.session.query(
             func.date(Participant.created_at).label("date"),
             func.count(Participant.id).label("count"),
         )
-        .group_by("date")
-        .order_by("date")  # 날짜순으로 정렬
+        .group_by(func.date(Participant.created_at))
+        .order_by(func.date(Participant.created_at))
         .all()
     )
 
-    # 날짜와 참가자 수를 분리하여 데이터프레임 생성
+    # 데이터프레임 생성
     df = pd.DataFrame(participant_counts, columns=['date', 'count'])
-    
+    df['date'] = pd.to_datetime(df['date'])
+
     # Plotly Express를 사용하여 그래프 생성
-    fig = px.line(df, x='date', y='count', title='일자별 참가자 수')
-    fig.update_layout(xaxis_title="날짜", yaxis_title="참가자 수")
+    fig = px.line(df, x='date', y='count', title='일자별 참가자 수', markers=True)
+    fig.update_layout(
+    xaxis_title="날짜",
+    yaxis_title="참가자 수",
+    xaxis=dict(tickformat='%Y-%m-%d'),
+    yaxis=dict(rangemode='tozero')
+    )
     
     # Plotly 그래프를 HTML로 변환
     graph_div = fig.to_html(full_html=False, config={'displayModeBar': False})

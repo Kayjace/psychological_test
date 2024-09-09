@@ -9,10 +9,10 @@
         body {
             font-family: Arial, sans-serif;
             background-image: url("{{ url_for('static', filename='images/background.png') }}");
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
             margin: 0;
             padding: 20px;
             background-color: #f4f4f4;
@@ -38,71 +38,118 @@
             width: 45%;
             margin: 10px;
         }
+        #loading-indicator {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
     <h1>MBTI Test Results</h1>
     
-    <div class="result-container">
-        <h2>Your MBTI Type: {{ mbti_type }}, {{ mbti_description }}</h2>
-    </div>
-    
-    <div class="result-container">
-        <h2>Overall Age Distribution</h2>
-        <div id="age-distribution"></div>
+    <div id="loading-indicator">
+        <div class="spinner"></div>
+        <p>Loading charts...</p>
     </div>
 
-    <div class="result-container">
-        <h2>Overall Gender Distribution</h2>
-        <div id="gender-distribution"></div>
-    </div>
+    <div id="charts-container" style="display: none;">
+        <div class="result-container">
+            <h2>Your MBTI Type: {{ mbti_type }}, {{ mbti_description }}</h2>
+        </div>
+        
+        <div class="result-container">
+            <h2>Overall Age Distribution</h2>
+            <div id="age-distribution"></div>
+        </div>
 
-    <div class="result-container">
-        <h2>Overall MBTI Type Distribution</h2>
-        <div id="mbti-distribution"></div>
-    </div>
+        <div class="result-container">
+            <h2>Overall Gender Distribution</h2>
+            <div id="gender-distribution"></div>
+        </div>
 
-    <div class="result-container">
-        <h2>Age Distribution by MBTI Type</h2>
-        <div id="age-mbti-distribution"></div>
-    </div>
+        <div class="result-container">
+            <h2>Overall MBTI Type Distribution</h2>
+            <div id="mbti-distribution"></div>
+        </div>
 
-    <div class="result-container">
-        <h2>Gender Distribution by MBTI Type</h2>
-        <div id="gender-mbti-distribution"></div>
-    </div>
+        <div class="result-container">
+            <h2>Age Distribution by MBTI Type</h2>
+            <div id="age-mbti-distribution"></div>
+        </div>
 
-    <div class="result-container">
-        <h2>MBTI Type Details</h2>
-        <div class="mbti-charts">
-            {% for mbti_type in ['ISTJ', 'ISFJ', 'INFJ', 'INTJ', 'ISTP', 'ISFP', 'INFP', 'INTP', 
-                                 'ESTP', 'ESFP', 'ENFP', 'ENTP', 'ESTJ', 'ESFJ', 'ENFJ', 'ENTJ'] %}
-            <div class="mbti-chart">
-                <h3>{{ mbti_type }}</h3>
-                <div id="{{ mbti_type }}-age"></div>
-                <div id="{{ mbti_type }}-gender"></div>
+        <div class="result-container">
+            <h2>Gender Distribution by MBTI Type</h2>
+            <div id="gender-mbti-distribution"></div>
+        </div>
+
+        <div class="result-container">
+            <h2>MBTI Type Details</h2>
+            <div class="mbti-charts">
+                {% for mbti in ['ISTJ', 'ISFJ', 'INFJ', 'INTJ', 'ISTP', 'ISFP', 'INFP', 'INTP', 
+                                'ESTP', 'ESFP', 'ENFP', 'ENTP', 'ESTJ', 'ESFJ', 'ENFJ', 'ENTJ'] %}
+                <div class="mbti-chart">
+                    <h3>{{ mbti }}</h3>
+                    <div id="{{ mbti }}-age"></div>
+                    <div id="{{ mbti }}-gender"></div>
+                </div>
+                {% endfor %}
             </div>
-            {% endfor %}
         </div>
     </div>
 
     <script>
         var graphs_json = {{ graphs_json | safe }};
 
-        Plotly.newPlot('mbti-distribution', graphs_json.mbti_distribution.data, graphs_json.mbti_distribution.layout);
-        Plotly.newPlot('age-mbti-distribution', graphs_json.age_mbti_distribution.data, graphs_json.age_mbti_distribution.layout);
-        Plotly.newPlot('gender-mbti-distribution', graphs_json.gender_mbti_distribution.data, graphs_json.gender_mbti_distribution.layout);
-        Plotly.newPlot('age-distribution', graphs_json.age_distribution.data, graphs_json.age_distribution.layout);
-        Plotly.newPlot('gender-distribution', graphs_json.gender_distribution.data, graphs_json.gender_distribution.layout);
+        document.addEventListener('DOMContentLoaded', function() {
+            var loadingIndicator = document.getElementById('loading-indicator');
+            var chartsContainer = document.getElementById('charts-container');
 
-        {% for mbti_type in ['ISTJ', 'ISFJ', 'INFJ', 'INTJ', 'ISTP', 'ISFP', 'INFP', 'INTP', 
-                     'ESTP', 'ESFP', 'ENFP', 'ENTP', 'ESTJ', 'ESFJ', 'ENFJ', 'ENTJ'] %}
-    var age_data = graphs_json.mbti_charts['{{ mbti_type }}'].age;
-    var gender_data = graphs_json.mbti_charts['{{ mbti_type }}'].gender;
-    
-    Plotly.newPlot('{{ mbti_type }}-age', age_data.data, age_data.layout);
-    Plotly.newPlot('{{ mbti_type }}-gender', gender_data.data, gender_data.layout);
-{% endfor %}
+            loadingIndicator.style.display = 'block';
+
+            function loadChartWithDelay(chartId, chartData, delay) {
+                setTimeout(function() {
+                    Plotly.newPlot(chartId, chartData.data, chartData.layout);
+                    if (chartId === 'gender-distribution') {
+                        loadingIndicator.style.display = 'none';
+                        chartsContainer.style.display = 'block';
+                    }
+                }, delay);
+            }
+
+            var mainCharts = [
+                {id: 'mbti-distribution', data: graphs_json.mbti_distribution},
+                {id: 'age-mbti-distribution', data: graphs_json.age_mbti_distribution},
+                {id: 'gender-mbti-distribution', data: graphs_json.gender_mbti_distribution},
+                {id: 'age-distribution', data: graphs_json.age_distribution},
+                {id: 'gender-distribution', data: graphs_json.gender_distribution}
+            ];
+
+            mainCharts.forEach(function(chart, index) {
+                loadChartWithDelay(chart.id, chart.data, index * 200);
+            });
+
+            var mbtiTypes = ['ISTJ', 'ISFJ', 'INFJ', 'INTJ', 'ISTP', 'ISFP', 'INFP', 'INTP', 
+                             'ESTP', 'ESFP', 'ENFP', 'ENTP', 'ESTJ', 'ESFJ', 'ENFJ', 'ENTJ'];
+            
+            mbtiTypes.forEach(function(mbtiType, index) {
+                loadChartWithDelay(mbtiType + '-age', graphs_json.mbti_charts[mbtiType].age, 1000 + index * 100);
+                loadChartWithDelay(mbtiType + '-gender', graphs_json.mbti_charts[mbtiType].gender, 1100 + index * 100);
+            });
+        });
     </script>
 </body>
 </html>
