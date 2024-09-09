@@ -84,19 +84,17 @@ pip install -r requirements.txt
 ```
 3. 애플리케이션 실행:
    
-    개발환경 실행 시  
+개발환경 실행 시
 ```terminal
 flask run
 ```
-
-    후 로컬 5000포트 연결  
-  
-    gunicorn 사용 시  
+후 로컬 5000포트 연결  
+    
+gunicorn 사용 시
 ```terminal
 gunicorn wsgi:application
 ```
-
-    후 로컬 8000 포트 연결  
+후 로컬 8000 포트 연결  
 ## 기여 방법
 
 프로젝트에 기여하고 싶으시다면 이슈를 열거나 풀 리퀘스트를 보내주세요.
