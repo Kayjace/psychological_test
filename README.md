@@ -82,7 +82,8 @@ python -m venv venv
 source venv/bin/activate # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
-3. 애플리케이션 실행:  
+3. 애플리케이션 실행:
+   
 개발환경 실행 시  
 ```
 flask run
