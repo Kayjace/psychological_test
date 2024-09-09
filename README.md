@@ -60,7 +60,7 @@ psychological_test/
 - **Question**: MBTI 질문 정보
 - **Quiz**: 참가자의 질문별 응답
 - **Admin**: 관리자 계정 정보
-- **Visitor**: 페이지 접속자 정보
+- **Visitor**: 페이지 접속자 정보
 
 ## 사용된 기술
 
