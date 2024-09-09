@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MBTI Quiz Results</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-image: url("{{ url_for('static', filename='images/background.png') }}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        h1 {
+            color: #4CAF50;
+            text-align: center;
+        }
+        .dashboard-button {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+        }
+        .form-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        select {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+        }
+        table {
+            margin: 0 auto;
+            border-collapse: collapse;
+            width: 80%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>MBTI Quiz Results</h1>
+    <div class="form-container">
+        <a href="{{ url_for('admin.dashboard') }}" class="dashboard-button">Back to Dashboard</a>
+        <form method="post">
+            <label for="participant">Select Participant:</label>
+            <select name="participant_id" id="participant" onchange="this.form.submit()">
+                <option value="">--Select--</option>
+                {% for participant in participants %}
+                    <option value="{{ participant.id }}" {% if participant.id == request.form.get('participant_id') %}selected{% endif %}>
+                        {{ participant.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Participant Name</th>
+                <th>Question Content</th>
+                <th>MBTI Dimension</th>
+                <th>Chosen Answer</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for quiz in quizzes %}
+                <tr>
+                    <td>{{ quiz.participant.name }}</td>
+                    <td>{{ quiz.question.content }}</td>
+                    <td>{{ quiz.question.type }}</td>
+                    <td>
+                        {% if quiz.chosen_answer == '1' %}
+                            {{ quiz.question.option_1 }}
+                        {% else %}
+                            {{ quiz.question.option_2 }}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

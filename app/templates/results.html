@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MBTI Test Results</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url("{{ url_for('static', filename='images/background.png') }}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #333;
+        }
+        .result-container {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 20px auto;
+            padding: 20px;
+            max-width: 800px;
+        }
+        .mbti-charts {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+        }
+        .mbti-chart {
+            width: 45%;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>MBTI Test Results</h1>
+    
+    <div class="result-container">
+        <h2>Your MBTI Type: {{ mbti_type }}, {{ mbti_description }}</h2>
+    </div>
+    
+    <div class="result-container">
+        <h2>Overall Age Distribution</h2>
+        <div id="age-distribution"></div>
+    </div>
+
+    <div class="result-container">
+        <h2>Overall Gender Distribution</h2>
+        <div id="gender-distribution"></div>
+    </div>
+
+    <div class="result-container">
+        <h2>Overall MBTI Type Distribution</h2>
+        <div id="mbti-distribution"></div>
+    </div>
+
+    <div class="result-container">
+        <h2>Age Distribution by MBTI Type</h2>
+        <div id="age-mbti-distribution"></div>
+    </div>
+
+    <div class="result-container">
+        <h2>Gender Distribution by MBTI Type</h2>
+        <div id="gender-mbti-distribution"></div>
+    </div>
+
+    <div class="result-container">
+        <h2>MBTI Type Details</h2>
+        <div class="mbti-charts">
+            {% for mbti_type in ['ISTJ', 'ISFJ', 'INFJ', 'INTJ', 'ISTP', 'ISFP', 'INFP', 'INTP', 
+                                 'ESTP', 'ESFP', 'ENFP', 'ENTP', 'ESTJ', 'ESFJ', 'ENFJ', 'ENTJ'] %}
+            <div class="mbti-chart">
+                <h3>{{ mbti_type }}</h3>
+                <div id="{{ mbti_type }}-age"></div>
+                <div id="{{ mbti_type }}-gender"></div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        var graphs_json = {{ graphs_json | safe }};
+
+        Plotly.newPlot('mbti-distribution', graphs_json.mbti_distribution.data, graphs_json.mbti_distribution.layout);
+        Plotly.newPlot('age-mbti-distribution', graphs_json.age_mbti_distribution.data, graphs_json.age_mbti_distribution.layout);
+        Plotly.newPlot('gender-mbti-distribution', graphs_json.gender_mbti_distribution.data, graphs_json.gender_mbti_distribution.layout);
+        Plotly.newPlot('age-distribution', graphs_json.age_distribution.data, graphs_json.age_distribution.layout);
+        Plotly.newPlot('gender-distribution', graphs_json.gender_distribution.data, graphs_json.gender_distribution.layout);
+
+        {% for mbti_type in ['ISTJ', 'ISFJ', 'INFJ', 'INTJ', 'ISTP', 'ISFP', 'INFP', 'INTP', 
+                     'ESTP', 'ESFP', 'ENFP', 'ENTP', 'ESTJ', 'ESFJ', 'ENFJ', 'ENTJ'] %}
+    var age_data = graphs_json.mbti_charts['{{ mbti_type }}'].age;
+    var gender_data = graphs_json.mbti_charts['{{ mbti_type }}'].gender;
+    
+    Plotly.newPlot('{{ mbti_type }}-age', age_data.data, age_data.layout);
+    Plotly.newPlot('{{ mbti_type }}-gender', gender_data.data, gender_data.layout);
+{% endfor %}
+    </script>
+</body>
+</html>

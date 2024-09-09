@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MBTI 심리테스트</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f9;
+            background-image: url("{{ url_for('static', filename='images/background.png') }}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        }
+        h1, h2 {
+            color: #4CAF50;
+            text-align: center;
+        }
+        p {
+            text-align: center;
+            color: #666;
+        }
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        div {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .admin-button {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .admin-button a {
+            text-decoration: none;
+            color: white;
+            background-color: #007BFF;
+            padding: 10px 20px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .admin-button a:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>MBTI 심리테스트</h1>
+    <p>당신의 성격 유형을 알아보세요! 아래 정보를 입력하고 테스트를 시작하세요.</p>
+    <h2>참여자 정보 입력</h2>
+    <form id="participantForm">
+        <div>
+            <label for="name">이름</label>
+            <input type="text" id="name" name="name" required autocomplete="off"/>
+        </div>
+        <div>
+            <label for="age">나이</label>
+            <select id="age" name="age" required>
+                <option value="teenage">10대</option>
+                <option value="twenty">20대</option>
+                <option value="thirty">30대</option>
+                <option value="forty">40대</option>
+                <option value="fifties">50대</option>
+                <option value="sixty">60대 이상</option>
+            </select>
+        </div>
+        <div>
+            <label for="gender">성별</label>
+            <select id="gender" name="gender" required>
+                <option value="male">남성</option>
+                <option value="female">여성</option>
+                <option value="other">기타</option>
+            </select>
+        </div>
+        <button type="submit">MBTI 테스트 시작하기</button>
+    </form>
+
+    <div class="admin-button">
+        <a href="{{ url_for('admin.login') }}">관리자 페이지로 이동</a>
+    </div>
+
+    <script>
+        document.getElementById("participantForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData.entries());
+
+            fetch("/participants", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(data),
+            })
+            .then((response) => {
+                if (!response.ok) throw new Error("Network response was not ok.");
+                return response.json();
+            })
+            .then((data) => {
+                document.cookie = "participant_id=" + data.participant_id + ";max-age=" + (60 * 60 * 24).toString() + ";path=/";
+                if (data.redirect) {
+                    window.location.href = data.redirect;
+                }
+            })
+            .catch((error) => console.error("Error:", error));
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage MBTI Questions</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px;
+            background-image: url("{{ url_for('static', filename='images/background.png') }}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;}
+        form { margin-bottom: 20px; border: 1px solid #ddd; padding: 10px; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 5px; margin: 5px 0; }
+        button { padding: 5px 10px; }
+        .dashboard-button { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <a href="{{ url_for('admin.dashboard') }}">
+        <button class="dashboard-button">Back to Dashboard</button>
+    </a>
+    <h1>Manage MBTI Questions</h1>
+    
+    <h2>Add New Question</h2>
+    <form action="{{ url_for('admin.manage_questions') }}" method="post">
+        <input type="text" name="content" placeholder="Question content" required>
+        <input type="text" name="option_1" placeholder="Option 1" required>
+        <input type="text" name="option_2" placeholder="Option 2" required>
+        <select name="type" required>
+            <option value="IE">I-E</option>
+            <option value="SN">S-N</option>
+            <option value="TF">T-F</option>
+            <option value="JP">J-P</option>
+        </select>
+        <input type="number" name="order_num" placeholder="Order number" required>
+        <label>
+            <input type="checkbox" name="is_active" checked> Active
+        </label>
+        <button type="submit" name="new_question">Add Question</button>
+    </form>
+
+    <h2>Existing Questions</h2>
+    {% for question in questions %}
+        <form action="{{ url_for('admin.manage_questions') }}" method="post">
+            <input type="hidden" name="question_id" value="{{ question.id }}">
+            <input type="text" name="content" value="{{ question.content }}" required>
+            <input type="text" name="option_1" value="{{ question.option_1 }}" required>
+            <input type="text" name="option_2" value="{{ question.option_2 }}" required>
+            <select name="type" required>
+                <option value="IE" {% if question.type == 'IE' %}selected{% endif %}>I-E</option>
+                <option value="SN" {% if question.type == 'SN' %}selected{% endif %}>S-N</option>
+                <option value="TF" {% if question.type == 'TF' %}selected{% endif %}>T-F</option>
+                <option value="JP" {% if question.type == 'JP' %}selected{% endif %}>J-P</option>
+            </select>
+            <input type="number" name="order_num" value="{{ question.order_num }}" required>
+            <label>
+                <input type="checkbox" name="is_active" {% if question.is_active %}checked{% endif %}> Active
+            </label>
+            <button type="submit">Update Question</button>
+        </form>
+    {% endfor %}
+</body>
+</html>
