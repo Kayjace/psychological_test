@@ -15,6 +15,7 @@
 - 참가자 퀴즈 결과 조회
 
 ## 프로젝트 구조
+```text
 psychological_test/
 │
 ├── app/
@@ -37,7 +38,7 @@ psychological_test/
 │ └── js/
 │
 └── run.py
-
+```
 
 ## 주요 라우트
 
