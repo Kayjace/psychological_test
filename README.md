@@ -22,19 +22,18 @@ psychological_test/
 │ ├── static/
 │ ├── images/
 │ │    └── background.png
-│ └── templates/
-│   ├── index.html
-│   ├── quiz.html
-│   ├── results.html
-│   ├── admin.html
-│   ├── dashboard.html
-│   └── manage_questions.html
+│ ├──templates/
+│ │ ├── index.html
+│ │ ├── quiz.html
+│ │ ├── results.html
+│ │ ├── admin.html
+│ │ ├── dashboard.html
+│ │ └── manage_questions.html
 │ ├── init.py
 │ ├── models.py
 │ ├── database.py
 │ ├── main.py
 │ └── admin.py
-│
 ├── db.sqlite
 ├── wsgi.py
 └── run.py
