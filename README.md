@@ -87,13 +87,13 @@ pip install -r requirements.txt
     개발환경 실행 시  
 ```
 flask run
-```
+
     후 로컬 5000포트 연결  
   
     gunicorn 사용 시  
 ```
 gunicorn wsgi:application
-```
+
     후 로컬 8000 포트 연결  
 ## 기여 방법
 
