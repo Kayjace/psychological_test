@@ -52,8 +52,8 @@ psychological_test/
 ### 관리자 라우트 (`admin.py`)
 - `/admin`: 관리자 로그인
 - `/admin/dashboard`: 전체 통계 및 그래프
-- `/admin/dashboard/question`: 질문 관리
-- `/admin/dashboard/list`: 개별 퀴즈 결과 조회
+- `/admin/dashboard/question`: 질문 관리 (질문 추가 및 수정, 활성화 및 비활성화)
+- `/admin/dashboard/list`: 개별 참여자 퀴즈 응답 조회
 
 ## 데이터 모델
 
@@ -61,12 +61,13 @@ psychological_test/
 - **Question**: MBTI 질문 정보
 - **Quiz**: 참가자의 질문별 응답
 - **Admin**: 관리자 계정 정보
+- **Visitor**: 페이지 접속자 정보
 
 ## 사용된 기술
 
 - **백엔드**: Python, Flask
 - **데이터베이스**: SQLAlchemy (ORM), SQLite
-- **프론트엔드**: HTML, CSS, JavaScript
+- **프론트엔드**: HTML, JavaScript
 - **데이터 시각화**: Plotly
 - **기타 라이브러리**: pandas, werkzeug.security
 
