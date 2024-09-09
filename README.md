@@ -1,6 +1,6 @@
 # 심리 테스트 프로젝트
 
-이 프로젝트는 Flask를 사용한 MBTI(Myers-Briggs Type Indicator) 성격 유형 테스트 웹 애플리케이션입니다.
+이 프로젝트는 Flask를 사용한 연습용 미니 프로젝트로, MBTI 성격 유형 테스트 웹 애플리케이션입니다.
 
 ## 주요 기능
 
@@ -93,10 +93,3 @@ gunicorn 사용 시 (기본값 localhost:8000)
 ```terminal
 gunicorn wsgi:application
 ```
-## 기여 방법
-
-프로젝트에 기여하고 싶으시다면 이슈를 열거나 풀 리퀘스트를 보내주세요.
-
-## 라이선스
-
-이 프로젝트는 [MIT 라이선스](LICENSE)하에 있습니다.
