@@ -9,7 +9,7 @@ from flask import (
     session,
 )
 from werkzeug.security import check_password_hash
-from .models import Question, Participant, Quiz, Admin
+from .models import Question, Participant, Quiz, Admin, Visitor
 from .database import db
 import plotly.express as px
 import pandas as pd
@@ -23,8 +23,23 @@ from datetime import datetime
 main = Blueprint("main", __name__)
 admin = Blueprint("admin", __name__, url_prefix="/admin/")
 
+def track_visitor():
+    ip_address = request.remote_addr
+    user_agent = request.headers.get('User-Agent')
+    
+    visitor = Visitor.query.filter_by(ip_address=ip_address, user_agent=user_agent).first()
+    
+    if visitor:
+        visitor.last_visit = datetime.utcnow()
+    else:
+        visitor = Visitor(ip_address=ip_address, user_agent=user_agent)
+        db.session.add(visitor)
+    
+    db.session.commit()
+
 @main.route("/", methods=["GET"])
 def home():
+    track_visitor()
     return render_template("index.html")
 
 @main.route("/participants", methods=["POST"])
@@ -264,33 +279,59 @@ def login_required(f):
     return decorated_function
 
 
-@admin.route("dashboard")
+@admin.route("/dashboard")
 @login_required
 def dashboard():
-    # 날짜별 참가자 수를 계산
+    # 유니크 방문자 수 계산
+    unique_visitors = db.session.query(func.count(func.distinct(Visitor.id))).scalar()
+    
+    # 총 참여자 수 계산
+    total_participants = db.session.query(func.count(Participant.id)).scalar()
+    
     participant_counts = (
         db.session.query(
             func.date(Participant.created_at).label("date"),
             func.count(Participant.id).label("count"),
         )
         .group_by("date")
+        .order_by("date")  # 날짜순으로 정렬
         .all()
     )
 
-    # 날짜와 참가자 수를 분리하여 리스트에 저장
-    dates = [result.date for result in participant_counts]
-    counts = [result.count for result in participant_counts]
-
-    # Plotly 그래프 생성
-    graph = go.Figure(go.Scatter(x=dates, y=counts, mode="lines+markers"))
-
-    graph.update_layout(title="일자별 참가자 수", xaxis_title="날짜", yaxis_title="참가자 수")
-
+    # 날짜와 참가자 수를 분리하여 데이터프레임 생성
+    df = pd.DataFrame(participant_counts, columns=['date', 'count'])
+    
+    # Plotly Express를 사용하여 그래프 생성
+    fig = px.line(df, x='date', y='count', title='일자별 참가자 수')
+    fig.update_layout(xaxis_title="날짜", yaxis_title="참가자 수")
+    
     # Plotly 그래프를 HTML로 변환
-    graph_div = plot(graph, output_type="div", include_plotlyjs=False,config = {'displayModeBar': False})
+    graph_div = fig.to_html(full_html=False, config={'displayModeBar': False})
 
-    # 생성된 HTML을 템플릿으로 전달
-    return render_template("dashboard.html", graph_div=graph_div)
+    # 성별 분포 계산
+    gender_counts = db.session.query(Participant.gender, func.count(Participant.id)).group_by(Participant.gender).all()
+    df_gender = pd.DataFrame(gender_counts, columns=['gender', 'count'])
+    
+    # 성별 분포 그래프
+    fig_gender = px.pie(df_gender, values='count', names='gender', title='성별 분포')
+    gender_distribution_div = fig_gender.to_html(full_html=False)
+
+    # 연령대 분포 계산
+    age_counts = db.session.query(Participant.age, func.count(Participant.id)).group_by(Participant.age).all()
+    df_age = pd.DataFrame(age_counts, columns=['age', 'count'])
+    
+    # 연령대 분포 그래프
+    fig_age = px.bar(df_age, x='age', y='count', title='연령대 분포')
+    age_distribution_div = fig_age.to_html(full_html=False)
+
+    return render_template(
+        "dashboard.html",
+        unique_visitors=unique_visitors,
+        total_participants=total_participants,
+        graph_div=graph_div,
+        gender_distribution_div=gender_distribution_div,
+        age_distribution_div=age_distribution_div
+    )
 
 
 @admin.route("/dashboard/question", methods=["GET", "POST"])

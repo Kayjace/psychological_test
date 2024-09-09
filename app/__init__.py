@@ -3,29 +3,25 @@ from flask_migrate import Migrate
 from flask.cli import with_appcontext
 import os
 import click
-from database import db
-from models import Question, Admin, Participant
+from .database import db
+from .models import Question, Admin, Participant
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta
 
 def create_app():
     app = Flask(__name__)
-    # 환경 변수에서 SECRET_KEY 가져오기, 없으면 기본값 사용
-    app.secret_key = os.environ.get("SECRET_KEY", "oz_coding_secret")
+    app.secret_key = "oz_coding_secret"
 
-    # Vercel Postgres 데이터베이스 URL 사용
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("POSTGRES_URL")
+    basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+    dbfile = os.path.join(basedir, "db.sqlite")
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + dbfile
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    # 데이터베이스 초기화
-    from .models import db
     db.init_app(app)
-    
-    # 마이그레이션 설정
     migrate = Migrate(app, db)
 
-    from routes import main as main_blueprint
-    from routes import admin as admin_blueprint
+    from .routes import main as main_blueprint
+    from .routes import admin as admin_blueprint
 
     app.register_blueprint(main_blueprint)
     app.register_blueprint(admin_blueprint)
