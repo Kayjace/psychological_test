@@ -13,6 +13,7 @@ class Participant(db.Model):
     age = db.Column(db.Integer)
     gender = db.Column(db.String(10))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    mbti_type = db.Column(db.String(4), nullable=True)
 
 class Admin(db.Model):
     __tablename__ = "admin"

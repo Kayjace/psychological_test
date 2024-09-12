@@ -45,13 +45,14 @@ def home():
     visitor_id = track_visitor()
     response = make_response(render_template("index.html"))
     response.set_cookie('visitor_id', visitor_id, max_age=31536000)  # 1년 유효
+    response.delete_cookie('participant_id')  # 기존 participant_id 쿠키 삭제
     return response
 
 @main.route("/participants", methods=["POST"])
 def add_participant():
     data = request.get_json()
     new_participant = Participant(
-        name=data["name"], age=data["age"], gender=data["gender"], created_at=datetime.utcnow()
+        name=data["name"], age=data["age"], gender=data["gender"], created_at=datetime.utcnow(), mbti_type=None
     )
     db.session.add(new_participant)
     db.session.commit()
@@ -71,25 +72,8 @@ def quiz():
         print(f"Error in quiz route: {str(e)}")
         return "An error occurred", 500
 
-@main.route("/submit", methods=["POST"])
-def submit():
-    participant_id = request.cookies.get("participant_id")
-    if not participant_id:
-        return jsonify({"error": "Participant ID not found"}), 400
-    data = request.json
-    quizzes = data.get("quizzes", [])
-    for quiz in quizzes:
-        new_quiz_entry = Quiz(
-            participant_id=participant_id,
-            question_id=quiz.get("question_id"),
-            chosen_answer=quiz.get("chosen_answer"),
-        )
-        db.session.add(new_quiz_entry)
-    db.session.commit()
-    return jsonify({
-        "message": "Quiz answers submitted successfully.",
-        "redirect": url_for("main.show_results"),
-    })
+
+
 
 @main.route("/questions")
 def get_questions():
@@ -104,28 +88,61 @@ def get_questions():
     print(f"Returning {len(questions_list)} questions: {questions_list}")  # 디버그 출력
     return jsonify(questions=questions_list)
 
+@main.route("/submit", methods=["POST"])
+def submit():
+    participant_id = request.cookies.get("participant_id")
+    if not participant_id:
+        return jsonify({"error": "Participant ID not found"}), 400
+
+    data = request.json
+    quizzes = data.get("quizzes", [])
+
+    # MBTI 계산
+    type_scores = {'I': 0, 'E': 0, 'S': 0, 'N': 0, 'T': 0, 'F': 0, 'J': 0, 'P': 0}
+    for quiz in quizzes:
+        question = Question.query.get(quiz.get("question_id"))
+        if quiz.get("chosen_answer") == '1':
+            type_scores[question.type[0]] += 1
+        else:
+            type_scores[question.type[1]] += 1
+
+    mbti_type = ''
+    mbti_type += 'I' if type_scores['I'] >= type_scores['E'] else 'E'
+    mbti_type += 'S' if type_scores['S'] >= type_scores['N'] else 'N'
+    mbti_type += 'T' if type_scores['T'] >= type_scores['F'] else 'F'
+    mbti_type += 'J' if type_scores['J'] >= type_scores['P'] else 'P'
+
+    # MBTI 유형 저장
+    participant = Participant.query.get(participant_id)
+    participant.mbti_type = mbti_type
+    db.session.commit()
+
+    # 퀴즈 답변 저장
+    for quiz in quizzes:
+        new_quiz_entry = Quiz(
+            participant_id=participant_id,
+            question_id=quiz.get("question_id"),
+            chosen_answer=quiz.get("chosen_answer"),
+        )
+        db.session.add(new_quiz_entry)
+    db.session.commit()
+
+    return jsonify({
+        "message": "Quiz answers submitted successfully.",
+        "redirect": url_for("main.show_results"),
+    })
+
 @main.route("/results")
 def show_results():
     participant_id = request.cookies.get("participant_id")
     if not participant_id:
         return redirect(url_for("main.home"))
 
-    # MBTI 결과 계산
-    quizzes = Quiz.query.filter_by(participant_id=participant_id).all()
-    type_scores = {'I': 0, 'E': 0, 'S': 0, 'N': 0, 'T': 0, 'F': 0, 'J': 0, 'P': 0}
-    for quiz in quizzes:
-        question = Question.query.get(quiz.question_id)
-        if quiz.chosen_answer == '1':
-            type_scores[question.type[0]] += 1
-        else:
-            type_scores[question.type[1]] += 1
-    
-    mbti_type = ''
-    mbti_type += 'I' if type_scores['I'] > type_scores['E'] else 'E'
-    mbti_type += 'S' if type_scores['S'] > type_scores['N'] else 'N'
-    mbti_type += 'T' if type_scores['T'] > type_scores['F'] else 'F'
-    mbti_type += 'J' if type_scores['J'] > type_scores['P'] else 'P'
+    participant = Participant.query.get(participant_id)
+    if not participant or not participant.mbti_type:
+        return redirect(url_for("main.home"))
 
+    mbti_type = participant.mbti_type
     mbti_descriptions = {
         'ISTP': '[탐험가형] 백과사전형, 만능 재주꾼',
         'ISFP': '[탐험가형] 성인군자형, 호기심 많은 예술가',
@@ -144,28 +161,11 @@ def show_results():
         'ENTP': '[분석형] 발명가형, 뜨거운 논쟁을 즐기는 변론가',
         'ENTJ': '[분석형] 지도자형, 대담한 통솔자'
     }
-
     mbti_description = mbti_descriptions.get(mbti_type, '')
 
-    # 모든 참가자의 MBTI 유형 계산
+    # 모든 참가자의 MBTI 유형 가져오기
     all_participants = Participant.query.all()
-    mbti_types = []
-    for participant in all_participants:
-        p_quizzes = Quiz.query.filter_by(participant_id=participant.id).all()
-        p_type_scores = {'I': 0, 'E': 0, 'S': 0, 'N': 0, 'T': 0, 'F': 0, 'J': 0, 'P': 0}
-        for quiz in p_quizzes:
-            question = Question.query.get(quiz.question_id)
-            if quiz.chosen_answer == '1':
-                p_type_scores[question.type[0]] += 1
-            else:
-                p_type_scores[question.type[1]] += 1
-        p_mbti_type = ''
-        p_mbti_type += 'I' if p_type_scores['I'] > p_type_scores['E'] else 'E'
-        p_mbti_type += 'S' if p_type_scores['S'] > p_type_scores['N'] else 'N'
-        p_mbti_type += 'T' if p_type_scores['T'] > p_type_scores['F'] else 'F'
-        p_mbti_type += 'J' if p_type_scores['J'] > p_type_scores['P'] else 'P'
-        mbti_types.append({'mbti': p_mbti_type, 'age': participant.age, 'gender': participant.gender})
-
+    mbti_types = [{'mbti': p.mbti_type, 'age': p.age, 'gender': p.gender} for p in all_participants if p.mbti_type]
 
     mbti_df = pd.DataFrame(mbti_types)
 
@@ -241,7 +241,12 @@ def show_results():
         "gender_distribution": fig_gender.to_dict(),
     }, cls=plotly.utils.PlotlyJSONEncoder)
 
-    return render_template("results.html", graphs_json=graphs_json, mbti_type=mbti_type, mbti_description=mbti_description)
+    participant = Participant.query.get(participant_id)
+    print(f"Participant ID: {participant_id}")
+    print(f"Participant MBTI type: {participant.mbti_type}")
+    m_description = mbti_descriptions.get(participant.mbti_type, '')
+    print(f"{m_description}")
+    return render_template("results.html", graphs_json=graphs_json, mbtitype=participant.mbti_type, mbtidescription=m_description)
 
 @admin.route("", methods=["GET", "POST"])
 def login():
